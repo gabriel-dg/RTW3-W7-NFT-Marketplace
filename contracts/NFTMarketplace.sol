@@ -1,13 +1,15 @@
 //SPDX-License-Identifier: Unlicense
 pragma solidity ^0.8.0;
 
-import "hardhat/console.sol";
 import "@openzeppelin/contracts/utils/Counters.sol";
-import "@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol";
 import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
+import "@openzeppelin/contracts/token/common/ERC2981.sol";
+// import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Enumerable.sol";
+import "@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol";
+import "hardhat/console.sol";
 
-contract NFTMarketplace is ERC721URIStorage {
-
+contract NFTMarketplace is ERC721URIStorage, ERC721Enumerable, ERC2981 {
     using Counters for Counters.Counter;
     //_tokenIds variable has the most recent minted tokenId
     Counters.Counter private _tokenIds;
@@ -28,7 +30,7 @@ contract NFTMarketplace is ERC721URIStorage {
     }
 
     //the event emitted when a token is successfully listed
-    event TokenListedSuccess (
+    event TokenListedSuccess(
         uint256 indexed tokenId,
         address owner,
         address seller,
@@ -39,8 +41,16 @@ contract NFTMarketplace is ERC721URIStorage {
     //This mapping maps tokenId to token info and is helpful when retrieving details about a tokenId
     mapping(uint256 => ListedToken) private idToListedToken;
 
-    constructor() ERC721("NFTMarketplace", "NFTM") {
+    // constructor(uint96 _royaltyFees) ERC721("NFTMarketplace", "NFTM") {
+    constructor() ERC721("NFTMarketplace", "NFTMP") {
+        uint96 _royaltyFees = 1000; // 10% Royalty Fees
         owner = payable(msg.sender);
+        setRoyaltyInfo(owner, _royaltyFees);
+    }
+
+    function setRoyaltyInfo(address _receiver, uint96 _royaltyFees) public {
+        require(owner == msg.sender, "Only owner can update Royalty info");
+        _setDefaultRoyalty(_receiver, _royaltyFees);
     }
 
     function updateListPrice(uint256 _listPrice) public payable {
@@ -52,12 +62,20 @@ contract NFTMarketplace is ERC721URIStorage {
         return listPrice;
     }
 
-    function getLatestIdToListedToken() public view returns (ListedToken memory) {
+    function getLatestIdToListedToken()
+        public
+        view
+        returns (ListedToken memory)
+    {
         uint256 currentTokenId = _tokenIds.current();
         return idToListedToken[currentTokenId];
     }
 
-    function getListedTokenForId(uint256 tokenId) public view returns (ListedToken memory) {
+    function getListedTokenForId(uint256 tokenId)
+        public
+        view
+        returns (ListedToken memory)
+    {
         return idToListedToken[tokenId];
     }
 
@@ -66,7 +84,11 @@ contract NFTMarketplace is ERC721URIStorage {
     }
 
     //The first time a token is created, it is listed here
-    function createToken(string memory tokenURI, uint256 price) public payable returns (uint) {
+    function createToken(string memory _tokenURI, uint256 price)
+        public
+        payable
+        returns (uint256)
+    {
         //Increment the tokenId counter, which is keeping track of the number of minted NFTs
         _tokenIds.increment();
         uint256 newTokenId = _tokenIds.current();
@@ -75,7 +97,7 @@ contract NFTMarketplace is ERC721URIStorage {
         _safeMint(msg.sender, newTokenId);
 
         //Map the tokenId to the tokenURI (which is an IPFS URL with the NFT metadata)
-        _setTokenURI(newTokenId, tokenURI);
+        _setTokenURI(newTokenId, _tokenURI);
 
         //Helper function to update Global variables and emit an event
         createListedToken(newTokenId, price);
@@ -108,18 +130,17 @@ contract NFTMarketplace is ERC721URIStorage {
             true
         );
     }
-    
+
     //This will return all the NFTs currently listed to be sold on the marketplace
     function getAllNFTs() public view returns (ListedToken[] memory) {
-        uint nftCount = _tokenIds.current();
+        uint256 nftCount = _tokenIds.current();
         ListedToken[] memory tokens = new ListedToken[](nftCount);
-        uint currentIndex = 0;
+        uint256 currentIndex = 0;
 
-        //at the moment currentlyListed is true for all, if it becomes false in the future we will 
+        //at the moment currentlyListed is true for all, if it becomes false in the future we will
         //filter out currentlyListed == false over here
-        for(uint i=0;i<nftCount;i++)
-        {
-            uint currentId = i + 1;
+        for (uint256 i = 0; i < nftCount; i++) {
+            uint256 currentId = i + 1;
             ListedToken storage currentItem = idToListedToken[currentId];
             tokens[currentIndex] = currentItem;
             currentIndex += 1;
@@ -127,26 +148,31 @@ contract NFTMarketplace is ERC721URIStorage {
         //the array 'tokens' has the list of all NFTs in the marketplace
         return tokens;
     }
-    
+
     //Returns all the NFTs that the current user is owner or seller in
     function getMyNFTs() public view returns (ListedToken[] memory) {
-        uint totalItemCount = _tokenIds.current();
-        uint itemCount = 0;
-        uint currentIndex = 0;
-        
+        uint256 totalItemCount = _tokenIds.current();
+        uint256 itemCount = 0;
+        uint256 currentIndex = 0;
+
         //Important to get a count of all the NFTs that belong to the user before we can make an array for them
-        for(uint i=0; i < totalItemCount; i++)
-        {
-            if(idToListedToken[i+1].owner == msg.sender || idToListedToken[i+1].seller == msg.sender){
+        for (uint256 i = 0; i < totalItemCount; i++) {
+            if (
+                idToListedToken[i + 1].owner == msg.sender ||
+                idToListedToken[i + 1].seller == msg.sender
+            ) {
                 itemCount += 1;
             }
         }
 
         //Once you have the count of relevant NFTs, create an array then store all the NFTs in it
         ListedToken[] memory items = new ListedToken[](itemCount);
-        for(uint i=0; i < totalItemCount; i++) {
-            if(idToListedToken[i+1].owner == msg.sender || idToListedToken[i+1].seller == msg.sender) {
-                uint currentId = i+1;
+        for (uint256 i = 0; i < totalItemCount; i++) {
+            if (
+                idToListedToken[i + 1].owner == msg.sender ||
+                idToListedToken[i + 1].seller == msg.sender
+            ) {
+                uint256 currentId = i + 1;
                 ListedToken storage currentItem = idToListedToken[currentId];
                 items[currentIndex] = currentItem;
                 currentIndex += 1;
@@ -156,9 +182,12 @@ contract NFTMarketplace is ERC721URIStorage {
     }
 
     function executeSale(uint256 tokenId) public payable {
-        uint price = idToListedToken[tokenId].price;
+        uint256 price = idToListedToken[tokenId].price;
         address seller = idToListedToken[tokenId].seller;
-        require(msg.value == price, "Please submit the asking price in order to complete the purchase");
+        require(
+            msg.value == price,
+            "Please submit the asking price in order to complete the purchase"
+        );
 
         //update the details of the token
         idToListedToken[tokenId].currentlyListed = true;
@@ -179,4 +208,39 @@ contract NFTMarketplace is ERC721URIStorage {
     //We might add a resell token function in the future
     //In that case, tokens won't be listed by default but users can send a request to actually list a token
     //Currently NFTs are listed by default
+
+    // The following functions are overrides required by Solidity.
+
+    function _beforeTokenTransfer(
+        address from,
+        address to,
+        uint256 tokenId
+    ) internal override(ERC721, ERC721Enumerable) {
+        super._beforeTokenTransfer(from, to, tokenId);
+    }
+
+    function supportsInterface(bytes4 interfaceId)
+        public
+        view
+        override(ERC721, ERC721Enumerable, ERC2981)
+        returns (bool)
+    {
+        return super.supportsInterface(interfaceId);
+    }
+
+    function _burn(uint256 tokenId)
+        internal
+        override(ERC721, ERC721URIStorage)
+    {
+        super._burn(tokenId);
+    }
+
+    function tokenURI(uint256 tokenId)
+        public
+        view
+        override(ERC721, ERC721URIStorage)
+        returns (string memory)
+    {
+        return super.tokenURI(tokenId);
+    }
 }
