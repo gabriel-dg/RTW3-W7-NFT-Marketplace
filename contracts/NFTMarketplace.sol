@@ -41,6 +41,7 @@ contract NFTMarketplace is ERC721URIStorage, ERC721Enumerable, ERC2981 {
     //This mapping maps tokenId to token info and is helpful when retrieving details about a tokenId
     mapping(uint256 => ListedToken) private idToListedToken;
 
+    // TODO: pass _royaltyFees as parameter
     // constructor(uint96 _royaltyFees) ERC721("NFTMarketplace", "NFTM") {
     constructor() ERC721("NFTMarketplace", "NFTMP") {
         uint96 _royaltyFees = 1000; // 10% Royalty Fees

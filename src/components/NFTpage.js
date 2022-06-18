@@ -23,6 +23,7 @@ export default function NFTPage(props) {
         //create an NFT Token
         const tokenURI = await contract.tokenURI(tokenId);
         const listedToken = await contract.getListedTokenForId(tokenId);
+
         let meta = await axios.get(tokenURI);
         meta = meta.data;
         console.log(listedToken);
@@ -36,7 +37,7 @@ export default function NFTPage(props) {
             name: meta.name,
             description: meta.description,
         }
-        console.log(item);
+        console.log("Item", item);
         updateData(item);
         updateDataFetched(true);
         console.log("address", addr)
@@ -93,9 +94,16 @@ export default function NFTPage(props) {
                         Seller: <span className="text-sm">{data.seller}</span>
                     </div>
                     <div>
-                        {currAddress == data.owner || currAddress == data.seller ?
+
+                        {/* // TODO: check if there's a bug in NFT owner (profile page -> You are the owner of this NFT) */}
+                        {/* {currAddress == data.owner || currAddress == data.seller ?
                             <button className="enableEthereumButton bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded text-sm" onClick={() => buyNFT(tokenId)}>Buy this NFT</button>
                             : <div className="text-emerald-700">You are the owner of this NFT</div>
+                        } */}
+                        {/* // NOTE: Conditional inverted. Changed from original*/}
+                        {currAddress == data.owner || currAddress == data.seller ?
+                            <div className="text-emerald-700">You are the owner of this NFT</div>
+                            : <button className="enableEthereumButton bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded text-sm" onClick={() => buyNFT(tokenId)}>Buy this NFT</button>
                         }
 
                         <div className="text-green text-center mt-3">{message}</div>
