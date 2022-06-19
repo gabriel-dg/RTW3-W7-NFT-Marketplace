@@ -38,6 +38,7 @@ export default function NFTPage(props) {
             description: meta.description,
         }
         console.log("Item", item);
+        console.log("DataPrice: ", meta.price);
         updateData(item);
         updateDataFetched(true);
         console.log("address", addr)
@@ -54,6 +55,7 @@ export default function NFTPage(props) {
             //Pull the deployed contract instance
             let contract = new ethers.Contract(MarketplaceJSON.address, MarketplaceJSON.abi, signer);
             const salePrice = ethers.utils.parseUnits(data.price, 'ether')
+            console.log("SalePrice buyNFT: ", salePrice)
             updateMessage("Buying the NFT... Please Wait (Upto 5 mins)")
             //run the executeSale function
             let transaction = await contract.executeSale(tokenId, { value: salePrice });
@@ -87,6 +89,12 @@ export default function NFTPage(props) {
                     <div>
                         Price: <span className="">{data.price + " ETH"}</span>
                     </div>
+
+                    {/* // NOTE: include Royalty Fees value - now is hardcoded by 10% */}
+                    <div>
+                        Royalty Fee: <span className="">{data.price / 10 + " ETH"}</span>
+                    </div>
+
                     <div>
                         Owner: <span className="text-sm">{data.owner}</span>
                     </div>
@@ -95,7 +103,6 @@ export default function NFTPage(props) {
                     </div>
                     <div>
 
-                        {/* // TODO: check if there's a bug in NFT owner (profile page -> You are the owner of this NFT) */}
                         {/* {currAddress == data.owner || currAddress == data.seller ?
                             <button className="enableEthereumButton bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded text-sm" onClick={() => buyNFT(tokenId)}>Buy this NFT</button>
                             : <div className="text-emerald-700">You are the owner of this NFT</div>
