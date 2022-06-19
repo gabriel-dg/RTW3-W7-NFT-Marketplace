@@ -8,7 +8,7 @@
 
 
 ![Screenshot](screenshot.png)
-![Screenshot](screenshot02.png)
+![Screenshot](screenshot2.png)
 
 ----
 
