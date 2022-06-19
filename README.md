@@ -6,6 +6,8 @@
 * How to create the front-end of your Marketplace
 * Get fees and commissions on NFTs sales
 
+## OpenZeppelin ERC2981 used for NFT Royalty Standard.
+
 
 ![Screenshot](screenshot.png)
 ![Screenshot](screenshot02.png)
